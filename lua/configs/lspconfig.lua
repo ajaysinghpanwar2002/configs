@@ -67,12 +67,12 @@ lspconfig.ts_ls.setup {
   filetypes = { "javascript", "typescript", "javascriptreact", "typescriptreact", "vue" },
   root_dir = lspconfig.util.root_pattern("package.json", "tsconfig.json", ".git"),
   settings = {
-    -- javascript = {
-    --   format = { enable = true },
-    -- },
-    -- typescript = {
-    --   format = { enable = true },
-    -- },
+    javascript = {
+      format = { enable = true },
+    },
+    typescript = {
+      format = { enable = true },
+    },
   },
 }
 
