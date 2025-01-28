@@ -3,6 +3,7 @@ require "nvchad.mappings"
 -- add yours here
 
 local map = vim.keymap.set
+local telescope = require("telescope")
 
 map("n", ";", ":", { desc = "CMD enter command mode" })
 map("i", "jk", "<ESC>")
@@ -54,4 +55,19 @@ map("n", "<Leader>ct", function()
 end, { desc = "Toggle Copilot" })
 
 map("n", "<leader>cc", ":Lazy load CopilotChat.nvim | CopilotChat<CR>", { noremap = true, silent = true })
+-- map("n", "<leader>fg", function()
+--   require("telescope").extensions.live_grep_args.live_grep_args()
+-- end, { desc = "Live Grep with Args" })
+
+-- map("n", "<leader>gr", function()
+--   local word = vim.fn.expand("<cword>")
+--   vim.cmd("vimgrep /" .. word .. "/gj **/*.*")
+--   vim.cmd("copen")
+-- end, { desc = "Grep current word in project" })
+
+map("n", "<leader>gr", function()
+  local word = vim.fn.expand("<cword>")
+  require("telescope").extensions.live_grep_args.live_grep_args({ default_text = word })
+end, { desc = "Live Grep current word with preview" })
+
 

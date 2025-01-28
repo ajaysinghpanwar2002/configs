@@ -26,16 +26,19 @@ end
 -- local capabilities = require('cmp_nvim_lsp').default_capabilities()
 
 local on_attach = function(client, bufnr)
-  -- Enable formatting capability for gopls
+  -- Enable formatting capability but skip for Python files
   if client.server_capabilities.documentFormattingProvider then
-    vim.api.nvim_create_autocmd("BufWritePre", {
-      group = vim.api.nvim_create_augroup("FormatOnSave", { clear = true }),
-      buffer = bufnr,
-      callback = function()
-        vim.lsp.buf.format { async = false }
-        vim.lsp.buf.code_action { only = { "source.organizeImports" } }
-      end,
-    })
+    local ft = vim.bo[bufnr].filetype
+    if ft ~= "python" then  -- Skip autoformatting for Python
+      vim.api.nvim_create_autocmd("BufWritePre", {
+        group = vim.api.nvim_create_augroup("FormatOnSave", { clear = true }),
+        buffer = bufnr,
+        callback = function()
+          vim.lsp.buf.format { async = false }
+          vim.lsp.buf.code_action { only = { "source.organizeImports" } }
+        end,
+      })
+    end
   end
 end
 
