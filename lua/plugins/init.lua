@@ -142,4 +142,18 @@ return {
       tele.load_extension "live_grep_args"
     end,
   },
+  {
+    "rmagatti/auto-session",
+    lazy = false, -- ensure the plugin loads at startup
+    config = function()
+      require("auto-session").setup {
+        log_level = "error", -- suppress extra messages
+        auto_session_enabled = true, -- enable session management
+        auto_save_enabled = true, -- save session on exit
+        auto_restore_enabled = true, -- automatically load session on startup
+        auto_session_root_dir = vim.fn.stdpath "data" .. "/sessions/", -- where to store sessions
+        auto_session_use_git_branch = false, -- (optional) don’t split sessions by git branch
+      }
+    end,
+  },
 }
