@@ -156,4 +156,17 @@ return {
       }
     end,
   },
+  {
+    "aliqyan-21/wit.nvim",
+    lazy = false,
+    config = function()
+      require("wit").setup {
+        engine = "google",
+        -- Optional: customize command names
+        command_search = "WitSearch",
+        command_search_visual = "WitSearchVisual",
+        command_search_wiki = "WitSearchWiki",
+      }
+    end,
+  },
 }
