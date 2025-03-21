@@ -1,0 +1,737 @@
+Directory structure:
+└── .//
+    ├── init.lua
+    ├── lua/
+    │   ├── plugins/
+    │   │   └── init.lua
+    │   ├── mappings.lua
+    │   ├── configs/
+    │   │   ├── lspconfig.lua
+    │   │   ├── conform.lua
+    │   │   └── lazy.lua
+    │   ├── options.lua
+    │   └── chadrc.lua
+    ├── lazy-lock.json
+    └── .stylua.toml
+
+================================================
+File: /init.lua
+================================================
+vim.g.base46_cache = vim.fn.stdpath "data" .. "/base46/"
+vim.g.mapleader = " "
+
+-- bootstrap lazy and all plugins
+local lazypath = vim.fn.stdpath "data" .. "/lazy/lazy.nvim"
+
+if not vim.uv.fs_stat(lazypath) then
+  local repo = "https://github.com/folke/lazy.nvim.git"
+  vim.fn.system { "git", "clone", "--filter=blob:none", repo, "--branch=stable", lazypath }
+end
+
+vim.opt.rtp:prepend(lazypath)
+
+local lazy_config = require "configs.lazy"
+
+-- load plugins
+require("lazy").setup({
+  {
+    "NvChad/NvChad",
+    lazy = false,
+    branch = "v2.5",
+    import = "nvchad.plugins",
+  },
+
+  { import = "plugins" },
+}, lazy_config)
+
+-- load theme
+dofile(vim.g.base46_cache .. "defaults")
+dofile(vim.g.base46_cache .. "statusline")
+
+require "options"
+require "nvchad.autocmds"
+
+vim.schedule(function()
+  require "mappings"
+end)
+
+
+
+================================================
+File: /lua/plugins/init.lua
+================================================
+return {
+  {
+    "stevearc/conform.nvim",
+    -- event = 'BufWritePre', -- uncomment for format on save
+    opts = require "configs.conform",
+  },
+
+  -- These are some examples, uncomment them if you want to see them work!
+  {
+    "neovim/nvim-lspconfig",
+    config = function()
+      require "configs.lspconfig"
+    end,
+  },
+  {
+    "mrcjkb/rustaceanvim",
+    version = "^5", -- Recommended
+    lazy = false, -- This plugin is already lazy
+    config = function()
+      local mason_registry = require "mason-registry"
+      local codelldb = mason_registry.get_package "codelldb"
+      local extension_path = codelldb:get_install_path() .. "/extension/"
+      local codelldb_path = extension_path .. "adapter/codelldb"
+      local liblldb_path = extension_path .. "lldb/lib/liblldb.dylib"
+      local cfg = require "rustaceanvim.config"
+
+      vim.g.rustaceanvim = {
+        dap = {
+          adapter = cfg.get_codelldb_adapter(codelldb_path, liblldb_path),
+        },
+      }
+    end,
+  },
+  {
+    "mfussenegger/nvim-dap",
+    config = function()
+      local dap, dapui = require "dap", require "dapui"
+      dap.listeners.before.attach.dapui_config = function()
+        dapui.open()
+      end
+      dap.listeners.before.launch.dapui_config = function()
+        dapui.open()
+      end
+      dap.listeners.before.event_terminated.dapui_config = function()
+        dapui.close()
+      end
+      dap.listeners.before.event_exited.dapui_config = function()
+        dapui.close()
+      end
+    end,
+  },
+  {
+    "rcarriga/nvim-dap-ui",
+    dependencies = { "mfussenegger/nvim-dap", "nvim-neotest/nvim-nio" },
+    config = function()
+      require("dapui").setup()
+    end,
+  },
+  {
+    "saecki/crates.nvim",
+    ft = { "toml" },
+    config = function()
+      require("crates").setup {
+        completion = {
+          cmp = {
+            enabled = true,
+          },
+        },
+      }
+      require("cmp").setup.buffer {
+        sources = { { name = "crates" } },
+      }
+    end,
+  },
+  {
+    "nvim-treesitter/nvim-treesitter",
+    opts = {
+      ensure_installed = {
+        "javascript", -- or "typescript"
+        "rust",
+        "go",
+        "python",
+        "lua",
+      },
+      highlight = {
+        enabled = true,
+        additional_vim_regex_highlighting = true,
+      },
+      fold = {
+        enable = true
+      }
+    },
+  },
+  {
+    "github/copilot.vim",
+    lazy = false,
+    config = function()
+      -- Disable default Tab mapping to prevent conflicts
+      vim.g.copilot_no_tab_map = true
+      vim.g.copilot_assume_mapped = true
+    end,
+  },
+  {
+    "CopilotC-Nvim/CopilotChat.nvim",
+    dependencies = {
+      { "github/copilot.vim" },
+      { "nvim-lua/plenary.nvim", branch = "master" },
+    },
+    build = "make tiktoken", -- Only on MacOS or Linux
+    opts = {
+      -- See Configuration section for options
+    },
+  },
+  {
+    "nvim-telescope/telescope.nvim",
+    dependencies = {
+      {
+        "nvim-telescope/telescope-live-grep-args.nvim",
+      },
+    },
+    opts = function(_, opts)
+      local lga_actions = require "telescope-live-grep-args.actions"
+      opts.extensions = {
+        live_grep_args = {
+          auto_quoting = true, -- enable/disable auto-quoting
+          -- define mappings, e.g.
+          mappings = { -- extend mappings
+            i = {
+              ["<C-k>"] = lga_actions.quote_prompt(),
+              ["<C-i>"] = lga_actions.quote_prompt { postfix = " --iglob " },
+            },
+          },
+          -- ... also accepts theme settings, for example:
+          -- theme = "dropdown", -- use dropdown theme
+          -- theme = { }, -- use own theme spec
+          -- layout_config = { mirror=true }, -- mirror preview pane
+        },
+      }
+    end,
+    keys = {
+      {
+        "<leader>/",
+        "<cmd>lua require('telescope').extensions.live_grep_args.live_grep_args()<CR>",
+        desc = "Grep (root dir)",
+      },
+    },
+    config = function(_, opts)
+      local tele = require "telescope"
+      tele.setup(opts)
+      tele.load_extension "live_grep_args"
+    end,
+  },
+  {
+    "rmagatti/auto-session",
+    lazy = false, -- ensure the plugin loads at startup
+    config = function()
+      require("auto-session").setup {
+        log_level = "error", -- suppress extra messages
+        auto_session_enabled = true, -- enable session management
+        auto_save_enabled = true, -- save session on exit
+        auto_restore_enabled = true, -- automatically load session on startup
+        auto_session_root_dir = vim.fn.stdpath "data" .. "/sessions/", -- where to store sessions
+        auto_session_use_git_branch = false, -- (optional) don’t split sessions by git branch
+      }
+    end,
+  },
+  {
+    "aliqyan-21/wit.nvim",
+    lazy = false,
+    config = function()
+      require("wit").setup {
+        engine = "google",
+        -- Optional: customize command names
+        command_search = "WitSearch",
+        command_search_visual = "WitSearchVisual",
+        command_search_wiki = "WitSearchWiki",
+      }
+    end,
+  },
+}
+
+
+================================================
+File: /lua/mappings.lua
+================================================
+require "nvchad.mappings"
+
+-- add yours here
+
+local map = vim.keymap.set
+local telescope = require "telescope"
+
+map("n", ";", ":", { desc = "CMD enter command mode" })
+map("i", "jk", "<ESC>")
+
+-- Nvim DAP
+map("n", "<Leader>dl", "<cmd>lua require'dap'.step_into()<CR>", { desc = "Debugger step into" })
+map("n", "<Leader>dj", "<cmd>lua require'dap'.step_over()<CR>", { desc = "Debugger step over" })
+map("n", "<Leader>dk", "<cmd>lua require'dap'.step_out()<CR>", { desc = "Debugger step out" })
+map("n", "<Leader>dc", "<cmd>lua require'dap'.continue()<CR>", { desc = "Debugger continue" })
+map("n", "<Leader>db", "<cmd>lua require'dap'.toggle_breakpoint()<CR>", { desc = "Debugger toggle breakpoint" })
+map(
+  "n",
+  "<Leader>dd",
+  "<cmd>lua require'dap'.set_breakpoint(vim.fn.input('Breakpoint condition: '))<CR>",
+  { desc = "Debugger set conditional breakpoint" }
+)
+map("n", "<Leader>de", "<cmd>lua require'dap'.terminate()<CR>", { desc = "Debugger reset" })
+map("n", "<Leader>dr", "<cmd>lua require'dap'.run_last()<CR>", { desc = "Debugger run last" })
+
+-- rustaceanvim
+map("n", "<Leader>dt", "<cmd>lua vim.cmd('RustLsp testables')<CR>", { desc = "Debugger testables" })
+
+map("n", "<C-e>", "<C-e>", { noremap = true, silent = true })
+map("n", "<C-y>", "<C-y>", { noremap = true, silent = true })
+
+map("n", "<C-h>", "<C-w>h", { noremap = true, silent = true })
+map("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
+map("n", "<C-k>", "<C-w>k", { noremap = true, silent = true })
+map("n", "<C-l>", "<C-w>l", { noremap = true, silent = true })
+
+-- map({ "n", "i", "v" }, "<C-s>", "<cmd> w <cr>")
+
+map("n", "<C-d>", vim.lsp.buf.definition, { noremap = true, silent = true })
+
+map("i", "<C-l>", 'copilot#Accept("<CR>")', { expr = true, silent = true, noremap = true })
+
+map("n", "<Leader>ct", function()
+  local copilot_enabled = vim.g.copilot_enabled or false
+  if copilot_enabled then
+    vim.cmd "Copilot disable"
+    vim.g.copilot_enabled = false
+    print "Copilot disabled"
+  else
+    vim.cmd "Copilot enable"
+    vim.g.copilot_enabled = true
+    print "Copilot enabled"
+  end
+end, { desc = "Toggle Copilot" })
+
+map("n", "<leader>cc", ":Lazy load CopilotChat.nvim | CopilotChat<CR>", { noremap = true, silent = true })
+-- map("n", "<leader>fg", function()
+--   require("telescope").extensions.live_grep_args.live_grep_args()
+-- end, { desc = "Live Grep with Args" })
+
+-- map("n", "<leader>gr", function()
+--   local word = vim.fn.expand("<cword>")
+--   vim.cmd("vimgrep /" .. word .. "/gj **/*.*")
+--   vim.cmd("copen")
+-- end, { desc = "Grep current word in project" })
+
+map("n", "<leader>gr", function()
+  local word = vim.fn.expand "<cword>"
+  require("telescope").extensions.live_grep_args.live_grep_args { default_text = word }
+end, { desc = "Live Grep current word with preview" })
+
+map("n", "<leader>ws", ":WitSearch ", { noremap = true, silent = false, desc = "Wit: Web Search" })
+map("n", "<leader>ww", ":WitSearchWiki ", { noremap = true, silent = false, desc = "Wit: Wikipedia Search" })
+map("v", "<leader>ws", ":WitSearchVisual<CR>", { noremap = true, silent = false, desc = "Wit: Visual Web Search" })
+
+map("n", "<leader>ge", function()
+  local task_file = vim.fn.input("Task file path: ")
+  if task_file == "" then
+    print("No task file provided!")
+    return
+  end
+
+  task_file = vim.fn.expand(task_file)
+
+  -- Read and parse JSON file
+  local file = io.open(task_file, "r")
+  if not file then
+    vim.notify("File not found: " .. task_file, vim.log.levels.ERROR)
+    return
+  end
+
+  local json_content = file:read "*a"
+  file:close()
+
+  local ok, data = pcall(vim.json.decode, json_content)
+  if not ok then
+    vim.notify("Failed to parse JSON file", vim.log.levels.ERROR)
+    return
+  end
+
+  local env_vars = {}
+  for _, container in ipairs(data.containerDefinitions or {}) do
+    if container.name == "ecs-recommendation-next" then
+      for _, env in ipairs(container.environment or {}) do
+        table.insert(env_vars, env.name .. "=" .. (env.value or ""))
+      end
+      break
+    end
+  end
+
+  if #env_vars == 0 then
+    vim.notify("⚠️ No environment variables found in container definition", vim.log.levels.WARN)
+    return
+  end
+
+  local output_file = vim.fn.getcwd() .. "/.env"
+  local out = io.open(output_file, "w")
+  if out then
+    out:write(table.concat(env_vars, "\n"))
+    out:close()
+    vim.notify(".env file generated at: " .. output_file, vim.log.levels.INFO)
+  else
+    vim.notify("Failed to write .env file", vim.log.levels.ERROR)
+  end
+end, { desc = "Generate .env from ECS task definition" })
+
+
+================================================
+File: /lua/configs/lspconfig.lua
+================================================
+-- load defaults i.e lua_lsp
+require("nvchad.configs.lspconfig").defaults()
+
+local lspconfig = require "lspconfig"
+
+-- EXAMPLE
+local servers = { "html", "cssls", "ts_ls" }
+local nvlsp = require "nvchad.configs.lspconfig"
+
+-- lsps with default config
+for _, lsp in ipairs(servers) do
+  lspconfig[lsp].setup {
+    on_attach = nvlsp.on_attach,
+    on_init = nvlsp.on_init,
+    capabilities = nvlsp.capabilities,
+  }
+end
+
+-- Configure diagnostic display to hide warnings
+vim.diagnostic.config({
+  virtual_text = {
+    severity = { min = vim.diagnostic.severity.ERROR }
+  },
+  signs = {
+    severity = { min = vim.diagnostic.severity.ERROR }
+  },
+  underline = {
+    severity = { min = vim.diagnostic.severity.ERROR }
+  },
+  float = {
+    severity = { min = vim.diagnostic.severity.ERROR }
+  }
+})
+
+local on_attach = function(client, bufnr)
+  -- Enable formatting capability but skip for Python files
+  if client.server_capabilities.documentFormattingProvider then
+    local ft = vim.bo[bufnr].filetype
+    if ft ~= "python" then  -- Skip autoformatting for Python
+      vim.api.nvim_create_autocmd("BufWritePre", {
+        group = vim.api.nvim_create_augroup("FormatOnSave", { clear = true }),
+        buffer = bufnr,
+        callback = function()
+          vim.lsp.buf.format { async = false }
+          vim.lsp.buf.code_action { only = { "source.organizeImports" } }
+        end,
+      })
+    end
+  end
+end
+
+lspconfig.gopls.setup {
+  on_attach = on_attach,
+  capabilities = nvlsp.capabilities,
+  on_init = nvlsp.on_init,
+  cmd = { "gopls" },
+  filetypes = { "go", "gomod", "gowork", "gotmpl" },
+  root_dir = lspconfig.util.root_pattern("go.work", "go.mod", ".git"),
+  settings = {
+    gopls = {
+      staticcheck = true,
+      gofumpt = true,
+      usePlaceholders = true,
+      analyses = {
+        unusedparams = true,
+        -- fieldalignment = true,
+      },
+    },
+  },
+}
+
+lspconfig.ts_ls.setup {
+  on_attach = nvlsp.on_attach,
+  capabilities = nvlsp.capabilities,
+  on_init = nvlsp.on_init,
+  cmd = { "typescript-language-server", "--stdio" },
+  filetypes = { "javascript", "typescript", "javascriptreact", "typescriptreact", "vue" },
+  root_dir = lspconfig.util.root_pattern("package.json", "tsconfig.json", ".git"),
+  settings = {
+    javascript = {
+      format = { enable = true },
+    },
+    typescript = {
+      format = { enable = true },
+    },
+  },
+}
+
+lspconfig.pyright.setup {
+  on_attach = on_attach,
+  capabilities = nvlsp.capabilities,
+  on_init = nvlsp.on_init,
+  filetypes = { "python" },
+  root_dir = lspconfig.util.root_pattern(".git", "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt"),
+  settings = {
+    python = {
+      analysis = {
+        typeCheckingMode = "basic",
+        autoSearchPaths = true,
+        useLibraryCodeForTypes = true,
+        diagnosticSeverityOverrides = {
+          reportGeneralTypeIssues = "error",          -- Only show errors, not warnings
+          reportOptionalMemberAccess = "none",        -- Disable optional member access warnings
+          reportOptionalSubscript = "none",           -- Disable optional subscript warnings
+          reportOptionalCall = "none",                -- Disable optional call warnings
+          reportOptionalIterable = "none",            -- Disable optional iterable warnings
+          reportOptionalContextManager = "none",      -- Disable optional context manager warnings
+          reportOptionalOperand = "none",             -- Disable optional operand warnings
+          reportUnusedImport = "none",                -- Disable unused import warnings
+          reportUnusedClass = "none",                 -- Disable unused class warnings
+          reportUnusedFunction = "none",              -- Disable unused function warnings
+          reportUnusedVariable = "none",              -- Disable unused variable warnings
+          reportDuplicateImport = "none",             -- Disable duplicate import warnings
+          reportWildcardImportFromLibrary = "none",   -- Disable wildcard import warnings
+          reportPrivateUsage = "none",                -- Disable private usage warnings
+          reportConstantRedefinition = "none",        -- Disable constant redefinition warnings
+          reportIncompatibleMethodOverride = "error", -- Keep method override errors
+          reportMissingImports = "error",             -- Keep missing import errors
+          reportUndefinedVariable = "error",          -- Keep undefined variable errors
+        }
+      },
+    },
+  },
+}
+
+-- Update pylsp with disabled linters/warnings
+lspconfig.pylsp.setup {
+  on_attach = on_attach,
+  capabilities = vim.lsp.protocol.make_client_capabilities(),
+  settings = {
+    pylsp = {
+      plugins = {
+        pycodestyle = { enabled = false },      -- Disable style checking
+        pyflakes = { enabled = false },         -- Disable pyflakes warnings
+        pylint = { enabled = false },           -- Disable pylint 
+        pyls_isort = { enabled = true },        -- Keep import sorting
+        pylsp_mypy = { 
+          enabled = true,
+          report_progress = true,
+          live_mode = false,
+          dmypy = false,
+          strict = false
+        },
+        pylsp_black = { enabled = true },       -- Keep black formatting
+        pylsp_rope = { enabled = true },        -- Keep rope refactoring
+      },
+    },
+  },
+}
+
+lspconfig.kotlin_language_server.setup {
+  on_attach = on_attach,
+  capabilities = nvlsp.capabilities,
+  on_init = nvlsp.on_init,
+  cmd = { "kotlin-language-server" },
+  filetypes = { "kotlin" },
+  root_dir = lspconfig.util.root_pattern("settings.gradle", "settings.gradle.kts", "build.gradle", "build.gradle.kts", ".git"),
+  settings = {
+    kotlin = {
+      compiler = {
+        jvm = {
+          target = "1.8"
+        }
+      }
+    }
+  }
+}
+
+
+
+================================================
+File: /lua/configs/conform.lua
+================================================
+local options = {
+  formatters_by_ft = {
+    lua = { "stylua" },
+    -- css = { "prettier" },
+    -- html = { "prettier" },
+  },
+
+  -- format_on_save = {
+  --   -- These options will be passed to conform.format()
+  --   timeout_ms = 500,
+  --   lsp_fallback = true,
+  -- },
+}
+
+return options
+
+
+================================================
+File: /lua/configs/lazy.lua
+================================================
+return {
+  defaults = { lazy = true },
+  install = { colorscheme = { "nvchad" } },
+
+  ui = {
+    icons = {
+      ft = "",
+      lazy = "󰂠 ",
+      loaded = "",
+      not_loaded = "",
+    },
+  },
+
+  performance = {
+    rtp = {
+      disabled_plugins = {
+        "2html_plugin",
+        "tohtml",
+        "getscript",
+        "getscriptPlugin",
+        "gzip",
+        "logipat",
+        "netrw",
+        "netrwPlugin",
+        "netrwSettings",
+        "netrwFileHandlers",
+        "matchit",
+        "tar",
+        "tarPlugin",
+        "rrhelper",
+        "spellfile_plugin",
+        "vimball",
+        "vimballPlugin",
+        "zip",
+        "zipPlugin",
+        "tutor",
+        "rplugin",
+        "syntax",
+        "synmenu",
+        "optwin",
+        "compiler",
+        "bugreport",
+        "ftplugin",
+      },
+    },
+  },
+}
+
+
+================================================
+File: /lua/options.lua
+================================================
+require "nvchad.options"
+
+-- add yours here!
+
+-- local o = vim.o
+-- o.cursorlineopt ='both' -- to enable cursorline!
+--
+
+local opt = vim.opt
+
+-- Enable folding based on Tree-sitter
+opt.foldmethod = "expr"
+opt.foldexpr = "nvim_treesitter#foldexpr()"
+
+-- Open all folds by default when opening a file
+vim.api.nvim_create_autocmd({"BufReadPost", "FileReadPost"}, {
+  pattern = "*",
+  command = "normal! zR"
+})
+
+
+
+================================================
+File: /lua/chadrc.lua
+================================================
+-- This file needs to have same structure as nvconfig.lua 
+-- https://github.com/NvChad/ui/blob/v3.0/lua/nvconfig.lua
+-- Please read that file to know all available options :( 
+
+---@type ChadrcConfig
+local M = {}
+
+M.base46 = {
+	theme = "ayu_dark",
+}
+
+-- M.plugins = {
+--   ["nvim-telescope/telescope.nvim"] = {
+--     override_options = {
+--       defaults = {
+--         vimgrep_arguments = {
+--           'rg',
+--           '--color=never',
+--           '--no-heading',
+--           '--with-filename',
+--           '--line-number',
+--           '--column',
+--           '--smart-case',
+--           '--hidden',
+--           '--glob=!.git/*',
+--           '--glob=!node_modules/*',
+--         },
+--       },
+--     },
+--   },
+-- }
+
+return M
+
+
+================================================
+File: /lazy-lock.json
+================================================
+{
+  "CopilotChat.nvim": { "branch": "main", "commit": "834ba1bc71e1a146831be0ebfeb456ad252c3c56" },
+  "LuaSnip": { "branch": "master", "commit": "c9b9a22904c97d0eb69ccb9bab76037838326817" },
+  "NvChad": { "branch": "v2.5", "commit": "6f25b2739684389ca69ea8229386c098c566c408" },
+  "auto-session": { "branch": "main", "commit": "82630e2f70be140f8dcc75a12e2ee2839e8488c2" },
+  "base46": { "branch": "v2.5", "commit": "fde7a2cd54599e148d376f82980407c2d24b0fa2" },
+  "cmp-buffer": { "branch": "main", "commit": "3022dbc9166796b644a841a02de8dd1cc1d311fa" },
+  "cmp-nvim-lsp": { "branch": "main", "commit": "99290b3ec1322070bcfb9e846450a46f6efa50f0" },
+  "cmp-nvim-lua": { "branch": "main", "commit": "f12408bdb54c39c23e67cab726264c10db33ada8" },
+  "cmp-path": { "branch": "main", "commit": "91ff86cd9c29299a64f968ebb45846c485725f23" },
+  "cmp_luasnip": { "branch": "master", "commit": "98d9cb5c2c38532bd9bdb481067b20fea8f32e90" },
+  "conform.nvim": { "branch": "master", "commit": "363243c03102a531a8203311d4f2ae704c620d9b" },
+  "copilot.vim": { "branch": "release", "commit": "87038123804796ca7af20d1b71c3428d858a9124" },
+  "crates.nvim": { "branch": "main", "commit": "bd35b13e94a292ee6e32c351e05ca2202dc9f070" },
+  "friendly-snippets": { "branch": "main", "commit": "efff286dd74c22f731cdec26a70b46e5b203c619" },
+  "gitsigns.nvim": { "branch": "main", "commit": "fc56fc25cfc3dc3f24266508aa4a7096102eb6a6" },
+  "indent-blankline.nvim": { "branch": "master", "commit": "e10626f7fcd51ccd56d7ffc00883ba7e0aa28f78" },
+  "lazy.nvim": { "branch": "main", "commit": "f15a93907ddad3d9139aea465ae18336d87f5ce6" },
+  "mason.nvim": { "branch": "main", "commit": "e2f7f9044ec30067bc11800a9e266664b88cda22" },
+  "menu": { "branch": "main", "commit": "7769b17c2a131108c02b10e9f844e504aa605cc2" },
+  "minty": { "branch": "main", "commit": "6dce9f097667862537823d515a0250ce58faab05" },
+  "nvim-autopairs": { "branch": "master", "commit": "3d02855468f94bf435db41b661b58ec4f48a06b7" },
+  "nvim-cmp": { "branch": "main", "commit": "12509903a5723a876abd65953109f926f4634c30" },
+  "nvim-dap": { "branch": "master", "commit": "52302f02fea3a490e55475de52fa4deb8af2eb11" },
+  "nvim-dap-ui": { "branch": "master", "commit": "bc81f8d3440aede116f821114547a476b082b319" },
+  "nvim-lspconfig": { "branch": "master", "commit": "00dae9f5f4ad215d4561f2fd2f26478c48b0ca7f" },
+  "nvim-nio": { "branch": "master", "commit": "21f5324bfac14e22ba26553caf69ec76ae8a7662" },
+  "nvim-tree.lua": { "branch": "master", "commit": "70825f23db61ecd900c4cfea169bffe931926a9d" },
+  "nvim-treesitter": { "branch": "master", "commit": "824bf8455fd670186986fb3eb46fcaa4c5460949" },
+  "nvim-web-devicons": { "branch": "master", "commit": "402377242b04be3f4f0f3720bd952df86e946c30" },
+  "plenary.nvim": { "branch": "master", "commit": "3707cdb1e43f5cea73afb6037e6494e7ce847a66" },
+  "rustaceanvim": { "branch": "master", "commit": "f03035fa03ccb36cd26d0792c946fbacba1d1a39" },
+  "telescope-live-grep-args.nvim": { "branch": "master", "commit": "649b662a8f476fd2c0289570764459e95ebaa3f3" },
+  "telescope.nvim": { "branch": "master", "commit": "415af52339215926d705cccc08145f3782c4d132" },
+  "ui": { "branch": "v3.0", "commit": "7f70aac4ad4741c48a2d2f5abac84c06de226c5f" },
+  "volt": { "branch": "main", "commit": "3bedb1576db574af160643eea7df3b09dbe5ee9c" },
+  "which-key.nvim": { "branch": "main", "commit": "0e76a87ac51772569aec678dc74baa8e2a86100c" },
+  "wit.nvim": { "branch": "master", "commit": "1d9e1246554711b748fb1c8708f4b4a1631ffbad" }
+}
+
+
+================================================
+File: /.stylua.toml
+================================================
+column_width = 120
+line_endings = "Unix"
+indent_type = "Spaces"
+indent_width = 2
+quote_style = "AutoPreferDouble"
+call_parentheses = "None"
+
+

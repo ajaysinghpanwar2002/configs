@@ -72,17 +72,25 @@ return {
       }
     end,
   },
-  -- {
-  -- 	"nvim-treesitter/nvim-treesitter",
-  -- 	opts = {
-  -- 		ensure_installed = {
-  -- 		},
-  --     highlight = {
-  --       enabled = true,
-  --       additional_vim_regex_highlighting = true,
-  --     },
-  -- 	},
-  -- },
+  {
+    "nvim-treesitter/nvim-treesitter",
+    opts = {
+      ensure_installed = {
+        "javascript", -- or "typescript"
+        "rust",
+        "go",
+        "python",
+        "lua",
+      },
+      highlight = {
+        enabled = true,
+        additional_vim_regex_highlighting = true,
+      },
+      fold = {
+        enable = true
+      }
+    },
+  },
   {
     "github/copilot.vim",
     lazy = false,
