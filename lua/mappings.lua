@@ -74,9 +74,9 @@ map("n", "<leader>ww", ":WitSearchWiki ", { noremap = true, silent = false, desc
 map("v", "<leader>ws", ":WitSearchVisual<CR>", { noremap = true, silent = false, desc = "Wit: Visual Web Search" })
 
 map("n", "<leader>ge", function()
-  local task_file = vim.fn.input("Task file path: ")
+  local task_file = vim.fn.input "Task file path: "
   if task_file == "" then
-    print("No task file provided!")
+    print "No task file provided!"
     return
   end
 
