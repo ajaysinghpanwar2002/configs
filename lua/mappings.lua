@@ -73,6 +73,15 @@ map("n", "<leader>ws", ":WitSearch ", { noremap = true, silent = false, desc = "
 map("n", "<leader>ww", ":WitSearchWiki ", { noremap = true, silent = false, desc = "Wit: Wikipedia Search" })
 map("v", "<leader>ws", ":WitSearchVisual<CR>", { noremap = true, silent = false, desc = "Wit: Visual Web Search" })
 
+map("n", "<leader>tw", function()
+  vim.wo.wrap = not vim.wo.wrap
+  print("Line wrap " .. (vim.wo.wrap and "enabled" or "disabled"))
+end, { desc = "Toggle line wrap" })
+
+map("n", "<leader>gb", function()
+  require("gitsigns").toggle_current_line_blame()
+end, { desc = "Toggle Git blame" })
+
 map("n", "<leader>ge", function()
   local task_file = vim.fn.input "Task file path: "
   if task_file == "" then
