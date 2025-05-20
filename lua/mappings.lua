@@ -36,6 +36,8 @@ map("n", "<C-l>", "<C-w>l", { noremap = true, silent = true })
 
 -- map({ "n", "i", "v" }, "<C-s>", "<cmd> w <cr>")
 
+map("n", "<leader>mp", ":MarkdownPreview<CR>", { noremap = true, silent = true, desc = "Markdown Preview" })
+
 map("n", "<C-d>", vim.lsp.buf.definition, { noremap = true, silent = true })
 
 map("i", "<C-l>", 'copilot#Accept("<CR>")', { expr = true, silent = true, noremap = true })

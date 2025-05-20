@@ -1,10 +1,10 @@
 -- load defaults i.e lua_lsp
-require("nvchad.configs.lspconfig").defaults()
+require("nvchad.configs.lspconfig")
 
 local lspconfig = require "lspconfig"
 
 -- EXAMPLE
-local servers = { "html", "cssls", "ts_ls" }
+local servers = { "html", "cssls", "ts_ls", "marksman" }
 local nvlsp = require "nvchad.configs.lspconfig"
 
 -- lsps with default config
@@ -194,6 +194,14 @@ lspconfig.pylsp.setup {
       },
     },
   },
+}
+
+lspconfig.marksman.setup {
+  on_attach = on_attach,
+  capabilities = nvlsp.capabilities,
+  on_init = nvlsp.on_init,
+  filetypes = { "markdown" },
+  root_dir = lspconfig.util.root_pattern(".git", ".marksman.toml", "."),
 }
 
 lspconfig.kotlin_language_server.setup {

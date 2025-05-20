@@ -87,8 +87,8 @@ return {
         additional_vim_regex_highlighting = true,
       },
       fold = {
-        enable = true
-      }
+        enable = true,
+      },
     },
   },
   {
@@ -175,6 +175,20 @@ return {
         command_search_visual = "WitSearchVisual",
         command_search_wiki = "WitSearchWiki",
       }
+    end,
+  },
+  {
+    "iamcco/markdown-preview.nvim",
+    build = "cd app && yarn install",
+    ft = { "markdown" },
+    config = function()
+      vim.g.mkdp_auto_start = 0
+      vim.g.mkdp_auto_close = 1
+      vim.g.mkdp_refresh_slow = 0
+      vim.g.mkdp_command_for_global = 0
+      vim.g.mkdp_open_to_the_world = 0
+      vim.g.mkdp_browser = ""
+      vim.g.mkdp_echo_preview_url = 1
     end,
   },
 }
