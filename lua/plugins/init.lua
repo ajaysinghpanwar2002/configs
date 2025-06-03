@@ -13,25 +13,6 @@ return {
     end,
   },
   {
-    "mrcjkb/rustaceanvim",
-    version = "^5", -- Recommended
-    lazy = false, -- This plugin is already lazy
-    config = function()
-      local mason_registry = require "mason-registry"
-      local codelldb = mason_registry.get_package "codelldb"
-      local extension_path = codelldb:get_install_path() .. "/extension/"
-      local codelldb_path = extension_path .. "adapter/codelldb"
-      local liblldb_path = extension_path .. "lldb/lib/liblldb.dylib"
-      local cfg = require "rustaceanvim.config"
-
-      vim.g.rustaceanvim = {
-        dap = {
-          adapter = cfg.get_codelldb_adapter(codelldb_path, liblldb_path),
-        },
-      }
-    end,
-  },
-  {
     "mfussenegger/nvim-dap",
     config = function()
       local dap, dapui = require "dap", require "dapui"
@@ -81,6 +62,10 @@ return {
         "go",
         "python",
         "lua",
+        "c",
+        "cpp",
+        "cmake",
+        "make",
       },
       highlight = {
         enabled = true,
@@ -189,6 +174,71 @@ return {
       vim.g.mkdp_open_to_the_world = 0
       vim.g.mkdp_browser = ""
       vim.g.mkdp_echo_preview_url = 1
+    end,
+  },
+  {
+    "p00f/clangd_extensions.nvim",
+    ft = { "c", "cpp" },
+    config = function()
+      require("clangd_extensions").setup {
+        server = {
+          -- Your clangd server options
+        },
+        extensions = {
+          -- defaults:
+          -- Automatically set inlay hints (type hints)
+          autoSetHints = true,
+          -- These apply to the default ClangdSetInlayHints command
+          inlay_hints = {
+            inline = vim.fn.has "nvim-0.10" == 1,
+            -- Options other than `highlight' and `priority' only work
+            -- if `inline' is disabled
+            -- Only show inlay hints for the current line
+            only_current_line = false,
+            -- Event which triggers a refresh of the inlay hints.
+            -- You can make this { "CursorMoved" } or { "CursorMoved,CursorMovedI" }
+            -- but not that this may have more performance costs.
+            only_current_line_autocmd = { "CursorHold" },
+            -- whether to show parameter hints with the inlay hints or not
+            show_parameter_hints = true,
+            -- prefix for parameter hints
+            parameter_hints_prefix = "<- ",
+            -- prefix for all the other hints (type, chaining)
+            other_hints_prefix = "=> ",
+            -- whether to align to the length of the longest line in the file
+            max_len_align = false,
+            -- padding from the left if max_len_align is true
+            max_len_align_padding = 1,
+            -- whether to align to the extreme right or not
+            right_align = false,
+            -- padding from the right if right_align is true
+            right_align_padding = 7,
+            -- The color of the hints
+            highlight = "Comment",
+            -- The highlight group priority for extmark
+            priority = 100,
+          },
+          ast = {
+            role_icons = {
+              type = "",
+              declaration = "",
+              expression = "",
+              specifier = "",
+              statement = "",
+              ["template argument"] = "",
+            },
+            kind_icons = {
+              Compound = "",
+              Recovery = "",
+              TranslationUnit = "",
+              PackExpansion = "",
+              TemplateTypeParm = "",
+              TemplateTemplateParm = "",
+              TemplateParamObject = "",
+            },
+          },
+        },
+      }
     end,
   },
 }

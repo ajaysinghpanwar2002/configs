@@ -4,7 +4,7 @@ require("nvchad.configs.lspconfig")
 local lspconfig = require "lspconfig"
 
 -- EXAMPLE
-local servers = { "html", "cssls", "ts_ls", "marksman" }
+local servers = { "html", "cssls", "ts_ls", "marksman", "clangd" }
 local nvlsp = require "nvchad.configs.lspconfig"
 
 -- lsps with default config
@@ -171,6 +171,53 @@ lspconfig.pyright.setup {
   },
 }
 
+lspconfig.clangd.setup {
+  on_attach = function(client, bufnr)
+    -- Enable formatting capability
+    if client.server_capabilities.documentFormattingProvider then
+      vim.api.nvim_create_autocmd("BufWritePre", {
+        group = vim.api.nvim_create_augroup("ClangdFormatOnSave", { clear = true }),
+        buffer = bufnr,
+        callback = function()
+          vim.lsp.buf.format { async = false }
+        end,
+      })
+    end
+  end,
+  capabilities = nvlsp.capabilities,
+  on_init = nvlsp.on_init,
+  cmd = {
+    "clangd",
+    "--background-index",
+    "--clang-tidy",
+    "--header-insertion=iwyu",
+    "--completion-style=detailed",
+    "--function-arg-placeholders",
+    "--fallback-style=llvm",
+  },
+  filetypes = { "c", "cpp", "objc", "objcpp", "cuda", "proto" },
+  root_dir = lspconfig.util.root_pattern(
+    ".clangd",
+    ".clang-tidy",
+    ".clang-format",
+    "compile_commands.json",
+    "compile_flags.txt",
+    "configure.ac",
+    ".git"
+  ),
+  settings = {
+    clangd = {
+      InlayHints = {
+        Designators = true,
+        Enabled = true,
+        ParameterNames = true,
+        DeducedTypes = true,
+      },
+      fallbackFlags = { "-std=c17" },
+    },
+  },
+}
+
 -- Update pylsp with disabled linters/warnings
 lspconfig.pylsp.setup {
   on_attach = on_attach,
@@ -222,6 +269,14 @@ lspconfig.kotlin_language_server.setup {
       compiler = {
         jvm = {
           target = "1.8",
+        },
+      },
+      diagnostics = {
+        severity = {
+          error = true,
+          warning = false,
+          info = false,
+          hint = false,
         },
       },
     },
