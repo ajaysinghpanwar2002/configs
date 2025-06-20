@@ -34,46 +34,46 @@ vim.diagnostic.config {
 
 local on_attach = function(client, bufnr)
   -- Enable formatting capability but skip for Python files
-  if client.server_capabilities.documentFormattingProvider then
-    local ft = vim.bo[bufnr].filetype
-    if ft ~= "python" then -- Skip autoformatting for Python
-      vim.api.nvim_create_autocmd("BufWritePre", {
-        group = vim.api.nvim_create_augroup("FormatOnSave", { clear = true }),
-        buffer = bufnr,
-        callback = function()
-          vim.lsp.buf.format { async = false }
-          vim.lsp.buf.code_action { only = { "source.organizeImports" } }
-        end,
-      })
-    end
-  end
+  -- if client.server_capabilities.documentFormattingProvider then
+  --   local ft = vim.bo[bufnr].filetype
+  --   if ft ~= "python" then -- Skip autoformatting for Python
+  --     vim.api.nvim_create_autocmd("BufWritePre", {
+  --       group = vim.api.nvim_create_augroup("FormatOnSave", { clear = true }),
+  --       buffer = bufnr,
+  --       callback = function()
+  --         vim.lsp.buf.format { async = false }
+  --         vim.lsp.buf.code_action { only = { "source.organizeImports" } }
+  --       end,
+  --     })
+  --   end
+  -- end
 end
 
 local go_on_attach = function(client, bufnr)
-  if client.server_capabilities.documentFormattingProvider then
-    vim.api.nvim_create_autocmd("BufWritePre", {
-      group = vim.api.nvim_create_augroup("GoFormatOnSave", { clear = true }),
-      buffer = bufnr,
-      callback = function()
-        -- Format without prompts
-        vim.lsp.buf.format { async = false }
-
-        -- Auto-import without prompts (uses goimports)
-        local params = vim.lsp.util.make_range_params()
-        params.context = { only = { "source.organizeImports" } }
-        local result = vim.lsp.buf_request_sync(bufnr, "textDocument/codeAction", params, 3000)
-        for _, res in pairs(result or {}) do
-          for _, r in pairs(res.result or {}) do
-            if r.edit then
-              vim.lsp.util.apply_workspace_edit(r.edit, "UTF-8")
-            else
-              vim.lsp.buf.execute_command(r.command)
-            end
-          end
-        end
-      end,
-    })
-  end
+  -- if client.server_capabilities.documentFormattingProvider then
+  --   vim.api.nvim_create_autocmd("BufWritePre", {
+  --     group = vim.api.nvim_create_augroup("GoFormatOnSave", { clear = true }),
+  --     buffer = bufnr,
+  --     callback = function()
+  --       -- Format without prompts
+  --       vim.lsp.buf.format { async = false }
+  --
+  --       -- Auto-import without prompts (uses goimports)
+  --       local params = vim.lsp.util.make_range_params()
+  --       params.context = { only = { "source.organizeImports" } }
+  --       local result = vim.lsp.buf_request_sync(bufnr, "textDocument/codeAction", params, 3000)
+  --       for _, res in pairs(result or {}) do
+  --         for _, r in pairs(res.result or {}) do
+  --           if r.edit then
+  --             vim.lsp.util.apply_workspace_edit(r.edit, "UTF-8")
+  --           else
+  --             vim.lsp.buf.execute_command(r.command)
+  --           end
+  --         end
+  --       end
+  --     end,
+  --   })
+  -- end
 end
 
 lspconfig.gopls.setup {
