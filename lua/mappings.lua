@@ -90,13 +90,22 @@ map("n", "<leader>gb", function()
 end, { desc = "Toggle Git blame" })
 
 map("n", "<leader>ge", function()
-  local task_file = vim.fn.input "Task file path: "
-  if task_file == "" then
-    print "No task file provided!"
+  local user_input = vim.fn.input("Task file path (or name in ~/Downloads): ", "", "file")
+  if user_input == "" then
+    vim.notify("No task file provided", vim.log.levels.WARN)
     return
   end
 
-  task_file = vim.fn.expand(task_file)
+  local task_file = vim.fn.expand(user_input)
+  if
+    vim.fn.filereadable(task_file) == 0 and not vim.startswith(user_input, "/")
+    and not vim.startswith(user_input, "~")
+  then
+    local downloads_candidate = vim.fn.expand("~/Downloads/" .. vim.fn.fnamemodify(user_input, ":t"))
+    if vim.fn.filereadable(downloads_candidate) == 1 then
+      task_file = downloads_candidate
+    end
+  end
 
   -- Read and parse JSON file
   local file = io.open(task_file, "r")
@@ -114,18 +123,51 @@ map("n", "<leader>ge", function()
     return
   end
 
+  local containers = data.containerDefinitions or {}
+  if vim.tbl_isempty(containers) then
+    vim.notify("No container definitions found in task file", vim.log.levels.WARN)
+    return
+  end
+
+  local selected_container = containers[1]
+  if #containers > 1 then
+    local options = { "Select container definition:" }
+    for idx, container in ipairs(containers) do
+      table.insert(options, string.format("%d. %s", idx, container.name or ("<unnamed-" .. idx .. ">")))
+    end
+    local choice = vim.fn.inputlist(options)
+    if choice >= 1 and choice <= #containers then
+      selected_container = containers[choice]
+    else
+      vim.notify(
+        string.format(
+          "Invalid selection, defaulting to container: %s",
+          selected_container.name or "<unnamed-1>"
+        ),
+        vim.log.levels.WARN
+      )
+    end
+  end
+
   local env_vars = {}
-  for _, container in ipairs(data.containerDefinitions or {}) do
-    if container.name == "ecs-recommendation-next" then
-      for _, env in ipairs(container.environment or {}) do
-        table.insert(env_vars, env.name .. "=" .. (env.value or ""))
+  for _, env in ipairs(selected_container.environment or {}) do
+    if env.name then
+      local value = env.value
+      if value == nil then
+        value = ""
+      elseif type(value) ~= "string" then
+        value = tostring(value)
       end
-      break
+      value = value:gsub("\n", "\\n")
+      table.insert(env_vars, env.name .. "=" .. value)
     end
   end
 
   if #env_vars == 0 then
-    vim.notify("⚠️ No environment variables found in container definition", vim.log.levels.WARN)
+    vim.notify(
+      string.format("⚠️ No environment variables found for container: %s", selected_container.name or "unknown"),
+      vim.log.levels.WARN
+    )
     return
   end
 
@@ -134,7 +176,10 @@ map("n", "<leader>ge", function()
   if out then
     out:write(table.concat(env_vars, "\n"))
     out:close()
-    vim.notify(".env file generated at: " .. output_file, vim.log.levels.INFO)
+    vim.notify(
+      string.format(".env file generated at: %s for container %s", output_file, selected_container.name or "unknown"),
+      vim.log.levels.INFO
+    )
   else
     vim.notify("Failed to write .env file", vim.log.levels.ERROR)
   end

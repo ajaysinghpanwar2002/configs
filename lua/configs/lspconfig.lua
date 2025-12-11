@@ -1,6 +1,25 @@
 -- load defaults i.e lua_lsp
 require("nvchad.configs.lspconfig")
 
+-- Completely disable deprecation warnings for lspconfig until new API is available
+local original_notify = vim.notify
+vim.notify = function(msg, level, opts)
+  -- Suppress lspconfig deprecation warnings
+  if type(msg) == "string" and msg:match("lspconfig.*deprecated") then
+    return
+  end
+  original_notify(msg, level, opts)
+end
+
+local original_deprecate = vim.deprecate
+vim.deprecate = function(old, new, version, plugin)
+  -- Suppress lspconfig deprecation warnings
+  if plugin == "nvim-lspconfig" then
+    return
+  end
+  original_deprecate(old, new, version, plugin)
+end
+
 local lspconfig = require "lspconfig"
 
 -- EXAMPLE
