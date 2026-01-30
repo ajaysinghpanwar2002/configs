@@ -23,7 +23,7 @@ end
 local lspconfig = require "lspconfig"
 
 -- EXAMPLE
-local servers = { "html", "cssls", "ts_ls", "marksman", "clangd" }
+local servers = { "html", "cssls" }
 local nvlsp = require "nvchad.configs.lspconfig"
 
 -- lsps with default config
@@ -142,7 +142,7 @@ lspconfig.ts_ls.setup {
   on_init = nvlsp.on_init,
   cmd = { "typescript-language-server", "--stdio" },
   filetypes = { "javascript", "typescript", "javascriptreact", "typescriptreact", "vue" },
-  root_dir = lspconfig.util.root_pattern("package.json", "tsconfig.json", ".git"),
+  root_dir = lspconfig.util.root_pattern("package.json", "tsconfig.json", "jsconfig.json", ".git"),
   settings = {
     javascript = {
       format = { enable = true },
