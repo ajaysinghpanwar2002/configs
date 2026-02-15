@@ -38,6 +38,14 @@ return {
     end,
   },
   {
+    "leoluz/nvim-dap-go",
+    ft = { "go" },
+    dependencies = { "mfussenegger/nvim-dap" },
+    config = function()
+      require("dap-go").setup()
+    end,
+  },
+  {
     "saecki/crates.nvim",
     ft = { "toml" },
     config = function()
