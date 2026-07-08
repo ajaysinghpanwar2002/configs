@@ -144,6 +144,18 @@ return {
     end,
   },
   {
+    "nvim-tree/nvim-tree.lua",
+    opts = function(_, opts)
+      opts.filters = vim.tbl_deep_extend("force", opts.filters or {}, {
+        dotfiles = false,
+        git_ignored = false,
+      })
+
+      opts.renderer = opts.renderer or {}
+      opts.renderer.highlight_git = "name"
+    end,
+  },
+  {
     "rmagatti/auto-session",
     lazy = false, -- ensure the plugin loads at startup
     config = function()

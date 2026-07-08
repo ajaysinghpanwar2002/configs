@@ -26,8 +26,8 @@ map("n", "<Leader>dr", "<cmd>lua require'dap'.run_last()<CR>", { desc = "Debugge
 -- rustaceanvim
 map("n", "<Leader>dt", "<cmd>lua vim.cmd('RustLsp testables')<CR>", { desc = "Debugger testables" })
 
-map("n", "<C-e>", "<C-e>", { noremap = true, silent = true })
-map("n", "<C-y>", "<C-y>", { noremap = true, silent = true })
+map("n", "<C-e>", "4<C-e>", { noremap = true, silent = true })
+map("n", "<C-y>", "4<C-y>", { noremap = true, silent = true })
 
 map("n", "<C-h>", "<C-w>h", { noremap = true, silent = true })
 map("n", "<C-j>", "<C-w>j", { noremap = true, silent = true })
